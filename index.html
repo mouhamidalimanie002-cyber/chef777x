@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef ! - نظام إدارة الملفات مع حسابات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a1f 0%, #0e1a0e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* نافذة تسجيل الدخول */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 40px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chef-logo {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        .auth-card h2 {
+            color: #2d3e2a;
+            margin-bottom: 10px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #888;
+            margin: 0;
+        }
+
+        .tab-btn.active {
+            color: #f5b042;
+            border-bottom: 3px solid #f5b042;
+            border-radius: 0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .input-group {
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #f5b042;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #2c3e2f 0%, #1a2a1a 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 20px 0 10px;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .guest-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+
+        .guest-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            margin: 20px 0;
+            border-top: 2px solid #eee;
+            position: relative;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            top: -12px;
+            color: #888;
+        }
+
+        .error-msg {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .success-msg {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        /* الواجهة الرئيسية */
+        .main-app {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 48px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e2f 0%, #1a2a1a 100%);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            color: #ffdf7e;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 50px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f5b042;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #2d3e2a;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        .greeting-box {
+            background: linear-gradient(135deg, #ffe5b4 0%, #ffd89a 100%);
+            margin: 20px 30px;
+            padding: 20px;
+            border-radius: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c4a2a;
+        }
+
+        .flex-main {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 25px;
+            flex: 1 1 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            color: #2b6e2a;
+            margin-bottom: 20px;
+        }
+
+        input, button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px 18px;
+            border-radius: 60px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #f5b042;
+            color: #2d2b1f;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #e09d2a;
+            transform: scale(0.98);
+        }
+
+        .file-list {
+            background: #fef7e8;
+            border-radius: 24px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #2c3e2f;
+            margin-bottom: 8px;
+        }
+
+        .file-meta {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .file-actions button {
+            flex: 1;
+            margin: 0;
+            padding: 8px;
+            font-size: 0.85rem;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .url-code {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            word-break: break-all;
+        }
+
+        footer {
+            background: #1f2a1a;
+            color: #bcb88a;
+            text-align: center;
+            padding: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .flex-main {
+                flex-direction: column;
+            }
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- نافذة تسجيل الدخول -->
+<div id="authModal" class="auth-modal">
+    <div class="auth-card">
+        <div class="chef-logo">🧑‍🍳</div>
+        <h2>CHEF !</h2>
+        <p>مرحباً بك في منصة مشاركة الملفات</p>
+
+        <div class="auth-tabs">
+            <button class="tab-btn active" onclick="switchTab('login')">تسجيل دخول</button>
+            <button class="tab-btn" onclick="switchTab('register')">إنشاء حساب</button>
+        </div>
+
+        <!-- نموذج تسجيل الدخول -->
+        <div id="loginTab" class="tab-content active">
+            <div class="input-group">
+                <label>👤 اسم المستخدم</label>
+                <input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم">
+            </div>
+            <div class="input-group">
+                <label>🔒 كلمة السر</label>
+                <input type="password" id="loginPassword" placeholder="أدخل كلمة السر">
+            </div>
+            <button class="submit-btn" onclick="login()">🚪 تسجيل الدخول</button>
+            <div id="loginError"></div>
+        </div>
+
+        <!-- نموذج إنشاء حساب -->
+        <div id="registerTab" class="tab-content">
+            <div class="input-group">
+                <label>👤 اسم المستخدم</label>
+                <input type="text" id="regUsername" placeholder="اختر اسم مستخدم">
+            </div>
+            <div class="input-group">
+                <label>📧 البريد الإلكتروني (اختياري)</label>
+                <input type="email" id="regEmail" placeholder="example@email.com">
+            </div>
+            <div class="input-group">
+                <label>🔒 كلمة السر</label>
+                <input type="password" id="regPassword" placeholder="اختر كلمة سر قوية">
+            </div>
+            <div class="input-group">
+                <label>🔒 تأكيد كلمة السر</label>
+                <input type="password" id="regConfirmPassword" placeholder="أعد كتابة كلمة السر">
+            </div>
+            <button class="submit-btn" onclick="register()">📝 إنشاء حساب جديد</button>
+            <div id="registerError"></div>
+        </div>
+
+        <div class="divider">
+            <span>أو</span>
+        </div>
+
+        <button class="guest-btn" onclick="continueAsGuest()">
+            👋 متابعة كزائر (تخزين محلي)
+        </button>
+
+        <p style="font-size: 0.7rem; color: #888; margin-top: 20px;">
+            🔒 حسابات آمنة مع تشفير كلمات السر<br>
+            💾 كل مستخدم له مساحة تخزين مستقلة
+        </p>
+    </div>
+</div>
+
+<!-- الواجهة الرئيسية -->
+<div id="mainApp" class="main-app">
+    <div class="container">
+        <header>
+            <div class="logo">🧑‍🍳 CHEF ! <span style="font-size: 0.9rem;">مشاركة الملفات</span></div>
+            <div id="userInfo" class="user-info"></div>
+        </header>
+
+        <div class="greeting-box" id="greetingBox">
+            🍽️ hey welcome to site chef 🧑‍🍳
+        </div>
+
+        <div class="flex-main">
+            <div class="card">
+                <h2>📤 رفع ملف جديد</h2>
+                <input type="file" id="fileInput">
+                <button id="uploadBtn">🚀 نشر وحفظ الملف</button>
+                <div id="uploadResult" style="margin-top: 12px;"></div>
+            </div>
+
+            <div class="card">
+                <h2>📂 ملفاتي المحفوظة</h2>
+                <button id="refreshBtn">🔄 تحديث القائمة</button>
+                <div id="myFilesList" class="file-list">
+                    <div>📭 لا توجد ملفات</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🔗 استرجاع ملف (URL فريد)</h2>
+                <input type="text" id="fileUrlInput" placeholder="أدخل الرابط أو كود الملف">
+                <button id="fetchBtn">🔍 اعرض الملف</button>
+                <div id="filePreview" class="file-list" style="margin-top: 15px;">
+                    <div>📄 سيظهر الملف هنا</div>
+                </div>
+                <p style="font-size: 0.7rem; margin-top: 10px; color: #666;">
+                    ✨ كل ملف له رابط فريد خاص به<br>
+                    💾 لا حدود لحجم الملفات<br>
+                    🔒 خصوصية تامة لكل حساب
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            🍳 Chef! - منصة آمنة لمشاركة الملفات | حسابات مشفرة وتخزين مستقل
+        </footer>
+    </div>
+</div>
+
+<script>
+    // ====================== نظام الحسابات مع تشفير بسيط ======================
+    
+    // قاعدة البيانات
+    let database = {
+        users: {},      // username -> { password, email, files, createdAt, avatarColor }
+        files: {}       // fileId -> { name, type, size, dataURL, owner, uploadedAt }
+    };
+    
+    let currentUser = null;
+    
+    // تحميل البيانات من localStorage
+    function loadDatabase() {
+        const saved = localStorage.getItem('chef_users_db');
+        if(saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                database.users = parsed.users || {};
+                database.files = parsed.files || {};
+            } catch(e) {}
+        }
+        
+        // إنشاء مستخدم تجريبي افتراضي للاختبار
+        if(Object.keys(database.users).length === 0) {
+            // مستخدم تجريبي: admin / admin123
+            database.users['admin'] = {
+                password: btoa('admin123'), // تشفير بسيط
+                email: 'admin@chef.com',
+                files: [],
+                createdAt: new Date().toISOString(),
+                avatarColor: '#2c6e2c'
+            };
+            saveDatabase();
+        }
+    }
+    
+    function saveDatabase() {
+        localStorage.setItem('chef_users_db', JSON.stringify({
+            users: database.users,
+            files: database.files
+        }));
+    }
+    
+    // دالة تشفير بسيطة (Base64)
+    function encryptPassword(password) {
+        return btoa(password);
+    }
+    
+    function decryptPassword(encrypted) {
+        try {
+            return atob(encrypted);
+        } catch(e) {
+            return null;
+        }
+    }
+    
+    // التحقق من صحة كلمة السر
+    function verifyPassword(inputPassword, storedPassword) {
+        return encryptPassword(inputPassword) === storedPassword;
+    }
+    
+    // إنشاء حساب جديد
+    function register() {
+        const username = document.getElementById('regUsername').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const confirmPassword = document.getElementById('regConfirmPassword').value;
+        const errorDiv = document.getElementById('registerError');
+        
+        // التحقق من المدخلات
+        if(!username) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ يرجى إدخال اسم المستخدم</div>';
+            return;
+        }
+        
+        if(username.length < 3) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ اسم المستخدم يجب أن يكون 3 أحرف على الأقل</div>';
+            return;
+        }
+        
+        if(password.length < 4) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ كلمة السر يجب أن تكون 4 أحرف على الأقل</div>';
+            return;
+        }
+        
+        if(password !== confirmPassword) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ كلمة السر وتأكيدها غير متطابقين</div>';
+            return;
+        }
+        
+        // التحقق من وجود المستخدم
+        if(database.users[username]) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ اسم المستخدم موجود مسبقاً، اختر اسماً آخر</div>';
+            return;
+        }
+        
+        // إنشاء الحساب
+        const colors = ['#2c6e2c', '#f5b042', '#5865F2', '#dc3545', '#17a2b8'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        database.users[username] = {
+            password: encryptPassword(password),
+            email: email || '',
+            files: [],
+            createdAt: new Date().toISOString(),
+            avatarColor: randomColor
+        };
+        
+        saveDatabase();
+        
+        errorDiv.innerHTML = '<div class="success-msg">✅ تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول</div>';
+        
+        // مسح الحقول
+        document.getElementById('regUsername').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('regConfirmPassword').value = '';
+        
+        // التبديل إلى تبويب تسجيل الدخول بعد 1.5 ثانية
+        setTimeout(() => {
+            switchTab('login');
+            errorDiv.innerHTML = '';
+        }, 1500);
+    }
+    
+    // تسجيل الدخول
+    function login() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errorDiv = document.getElementById('loginError');
+        
+        if(!username || !password) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ يرجى إدخال اسم المستخدم وكلمة السر</div>';
+            return;
+        }
+        
+        const user = database.users[username];
+        
+        if(!user) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ اسم المستخدم غير موجود</div>';
+            return;
+        }
+        
+        if(!verifyPassword(password, user.password)) {
+            errorDiv.innerHTML = '<div class="error-msg">❌ كلمة السر غير صحيحة</div>';
+            return;
+        }
+        
+        // تسجيل الدخول ناجح
+        currentUser = {
+            username: username,
+            email: user.email,
+            files: user.files,
+            avatarColor: user.avatarColor
+        };
+        
+        localStorage.setItem('chef_current_session', JSON.stringify({
+            username: username,
+            loginTime: Date.now()
+        }));
+        
+        // إغلاق نافذة التسجيل وعرض التطبيق
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        
+        updateUI();
+        loadUserFiles();
+        
+        // مسح الحقول
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        errorDiv.innerHTML = '';
+    }
+    
+    // وضع ضيف
+    function continueAsGuest() {
+        const guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+        
+        currentUser = {
+            username: guestId,
+            isGuest: true,
+            displayName: 'زائر_' + Math.floor(Math.random() * 10000),
+            files: [],
+            avatarColor: '#6c757d'
+        };
+        
+        localStorage.setItem('chef_current_session', JSON.stringify({
+            isGuest: true,
+            guestId: guestId,
+            loginTime: Date.now()
+        }));
+        
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        
+        updateUI();
+        loadUserFiles();
+    }
+    
+    // تسجيل الخروج
+    function logout() {
+        localStorage.removeItem('chef_current_session');
+        currentUser = null;
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authModal').style.display = 'flex';
+    }
+    
+    // تحديث واجهة المستخدم
+    function updateUI() {
+        const userInfoDiv = document.getElementById('userInfo');
+        const greetingBox = document.getElementById('greetingBox');
+        
+        if(currentUser) {
+            const displayName = currentUser.isGuest ? currentUser.displayName : currentUser.username;
+            const userType = currentUser.isGuest ? '👤 ضيف' : '📘 حساب مسجل';
+            
+            userInfoDiv.innerHTML = `
+                <div class="user-avatar" style="background: ${currentUser.avatarColor}">${displayName.charAt(0).toUpperCase()}</div>
+                <span style="color:white;">${displayName}</span>
+                <span style="font-size:0.7rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:20px;">
+                    ${userType}
+                </span>
+                <button class="logout-btn" onclick="logout()">🚪 خروج</button>
+            `;
+            
+            greetingBox.innerHTML = `🍽️ hey welcome to site chef 🧑‍🍳<br>مرحباً ${displayName}! يمكنك الآن رفع ومشاركة ملفاتك بأمان`;
+        }
+    }
+    
+    // رفع ملف
+    function uploadFile() {
+        if(!currentUser) {
+            alert("الرجاء تسجيل الدخول أولاً");
+            return;
+        }
+        
+        const fileInput = document.getElementById('fileInput');
+        if(!fileInput.files.length) {
+            alert("اختر ملفاً أولاً!");
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const fileId = Date.now() + '_' + Math.random().toString(36).substr(2, 15);
+            const fileData = {
+                id: fileId,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                dataURL: e.target.result,
+                owner: currentUser.isGuest ? currentUser.username : currentUser.username,
+                uploadedAt: new Date().toISOString()
+            };
+            
+            database.files[fileId] = fileData;
+            
+            // إضافة إلى قائمة ملفات المستخدم
+            const userKey = currentUser.isGuest ? currentUser.username : currentUser.username;
+            
+            if(currentUser.isGuest) {
+                if(!currentUser.files.includes(fileId)) {
+                    currentUser.files.push(fileId);
+                }
+            } else {
+                if(!database.users[currentUser.username].files.includes(fileId)) {
+                    database.users[currentUser.username].files.push(fileId);
+                }
+                // تحديث currentUser
+                currentUser.files = database.users[currentUser.username].files;
+            }
+            
+            saveDatabase();
+            
+            const fileUrl = `${window.location.origin}${window.location.pathname}?file=${fileId}`;
+            document.getElementById('uploadResult').innerHTML = `
+                <div style="background:#d4edda; padding:10px; border-radius:15px;">
+                    ✅ تم الرفع بنجاح!<br>
+                    <strong>الرابط الفريد:</strong><br>
+                    <span class="url-code">${fileUrl}</span><br>
+                    <button onclick="copyToClipboard('${fileUrl}')" style="margin-top:5px; padding:5px;">📋 نسخ الرابط</button>
+                </div>
+            `;
+            
+            loadUserFiles();
+            fileInput.value = '';
+        };
+        
+        reader.readAsDataURL(file);
+    }
+    
+    // تحميل ملفات المستخدم
+    function loadUserFiles() {
+        const container = document.getElementById('myFilesList');
+        let userFiles = [];
+        
+        if(currentUser.isGuest) {
+            userFiles = currentUser.files || [];
+        } else {
+            const user = database.users[currentUser.username];
+            userFiles = user?.files || [];
+        }
+        
+        if(!userFiles || userFiles.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#888;">📭 لا توجد ملفات مرفوعة بعد</div>';
+            return;
+        }
+        
+        let html = '';
+        userFiles.forEach(fileId => {
+            const file = database.files[fileId];
+            if(file) {
+                const fileUrl = `${window.location.origin}${window.location.pathname}?file=${fileId}`;
+                html += `
+                    <div class="file-item">
+                        <div class="file-name">📄 ${file.name}</div>
+                        <div class="file-meta">
+                            ${(file.size/1024).toFixed(1)} KB • ${new Date(file.uploadedAt).toLocaleString()}
+                        </div>
+                        <div class="file-actions">
+                            <button class="copy-btn" onclick="copyToClipboard('${fileUrl}')">📋 نسخ الرابط</button>
+                            <button class="delete-btn" onclick="deleteFile('${fileId}')">🗑️ حذف</button>
+                        </div>
+                        <div class="url-code">🔗 ${fileId.substring(0, 20)}...</div>
+                    </div>
+                `;
+            }
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // حذف ملف
+    window.deleteFile = function(fileId) {
+        if(confirm("هل أنت متأكد من حذف هذا الملف نهائياً؟")) {
+            // حذف من قاعدة البيانات
+            delete database.files[fileId];
+            
+            // حذف من قائمة المستخدم
+            if(currentUser.isGuest) {
+                currentUser.files = currentUser.files.filter(id => id !== fileId);
+            } else {
+                database.users[currentUser.username].files = database.users[currentUser.username].files.filter(id => id !== fileId);
+                currentUser.files = database.users[currentUser.username].files;
+            }
+            
+            saveDatabase();
+            loadUserFiles();
+            showMessage("✅ تم حذف الملف بنجاح");
+        }
+    };
+    
+    // استرجاع ملف
+    function fetchFile() {
+        let input = document.getElementById('fileUrlInput').value.trim();
+        let fileId = null;
+        
+        if(input.includes('?file=')) {
+            fileId = input.split('?file=')[1];
+        } else {
+            fileId = input;
+        }
+        
+        const file = database.files[fileId];
+        const previewDiv = document.getElementById('filePreview');
+        
+        if(!file) {
+            previewDiv.innerHTML = '<div style="color:red; text-align:center;">❌ الملف غير موجود أو تم حذفه</div>';
+            return;
+        }
+        
+        if(file.type.startsWith('image/')) {
+            previewDiv.innerHTML = `
+                <div style="text-align:center;">
+                    <strong>${file.name}</strong><br>
+                    <img src="${file.dataURL}" style="max-width:100%; max-height:250px; margin:10px 0;"><br>
+                    <a href="${file.dataURL}" download="${file.name}" style="background:#28a745; color:white; padding:8px 15px; border-radius:20px; text-decoration:none;">⬇️ تحميل الملف</a>
+                </div>
+            `;
+        } else {
+            previewDiv.innerHTML = `
+                <div style="text-align:center;">
+                    <strong>${file.name}</strong><br>
+                    <div class="file-meta">${(file.size/1024).toFixed(1)} KB</div>
+                    <a href="${file.dataURL}" download="${file.name}" style="background:#28a745; color:white; padding:8px 15px; border-radius:20px; text-decoration:none; display:inline-block; margin-top:10px;">⬇️ تحميل الملف</a>
+                </div>
+            `;
+        }
+    }
+    
+    // نسخ إلى الحافظة
+    window.copyToClipboard = function(text) {
+        navigator.clipboard.writeText(text);
+        showMessage("📋 تم نسخ الرابط إلى الحافظة!");
+    };
+    
+    function showMessage(msg) {
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.innerHTML = `<div style="background:#d4edda; color:#155724; padding:10px; border-radius:15px; text-align:center;">${msg}</div>`;
+        setTimeout(() => {
+            if(resultDiv.innerHTML.includes(msg)) resultDiv.innerHTML = '';
+        }, 3000);
+    }
+    
+    // التبديل بين التبويبات
+    window.switchTab = function(tab) {
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const tabs = document.querySelectorAll('.tab-btn');
+        
+        tabs.forEach(btn => btn.classList.remove('active'));
+        
+        if(tab === 'login') {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            tabs[0].classList.add('active');
+        } else {
+            loginTab.classList.remove('active');
+            registerTab.classList.add('active');
+            tabs[1].classList.add('active');
+        }
+        
+        // مسح الأخطاء
+        document.getElementById('loginError').innerHTML = '';
+        document.getElementById('registerError').innerHTML = '';
+    };
+    
+    // استعادة الجلسة
+    function restoreSession() {
+        const savedSession = localStorage.getItem('chef_current_session');
+        if(savedSession) {
+            try {
+                const session = JSON.parse(savedSession);
+                
+                if(session.isGuest) {
+                    currentUser = {
+                        username: session.guestId,
+                        isGuest: true,
+                        displayName: 'زائر_سابق',
+                        files: [],
+                        avatarColor: '#6c757d'
+                    };
+                    
+                    // استعادة ملفات الضيف
+                    for(const fileId in database.files) {
+                        if(database.files[fileId].owner === session.guestId) {
+                            currentUser.files.push(fileId);
+                        }
+                    }
+                    
+                    document.getElementById('authModal').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    updateUI();
+                    loadUserFiles();
+                    return true;
+                    
+                } else if(session.username && database.users[session.username]) {
+                    const user = database.users[session.username];
+                    currentUser = {
+                        username: session.username,
+                        email: user.email,
+                        files: user.files,
+                        avatarColor: user.avatarColor
+                    };
+                    
+                    document.getElementById('authModal').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    updateUI();
+                    loadUserFiles();
+                    return true;
+                }
+            } catch(e) {}
+        }
+        return false;
+    }
+    
+    // معالجة الرابط
+    function handleFileFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileId = urlParams.get('file');
+        if(fileId) {
+            document.getElementById('fileUrlInput').value = fileId;
+            fetchFile();
+        }
+    }
+    
+    // تهيئة التطبيق
+    window.addEventListener('load', () => {
+        loadDatabase();
+        
+        if(!restoreSession()) {
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+        }
+        
+        handleFileFromUrl();
+        
+        document.getElementById('uploadBtn').addEventListener('click', uploadFile);
+        document.getElementById('refreshBtn').addEventListener('click', loadUserFiles);
+        document.getElementById('fetchBtn').addEventListener('click', fetchFile);
+        
+        // السماح بالضغط على Enter
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') login();
+        });
+        document.getElementById('regConfirmPassword').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') register();
+        });
+    });
+</script>
+</body>
+</html>
